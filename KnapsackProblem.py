@@ -1,10 +1,5 @@
 import numpy as np
 
-# Peepee poopoo
-
-# git config --global user.email "you@example.com"
-# git config --global user.name "Your Name"
-
 def knapsack(weights, values, capacity):
     n = len(weights)
     # Initialize a 2D array to store the maximum value that can be obtained
