@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 INT_MAX = 2147483647
 
@@ -113,16 +114,34 @@ def crossover(population,start):
     return population
 
 
+def generate_city(num_cities):
+    np.random.seed(0)
+    # Set random seed for reproducibility
+    
+
+    # Generate random cost matrix for 50 cities
+    cost_matrix = np.random.randint(1, 50, size=(num_cities, num_cities))
+
+    # Make diagonal elements zero since it costs nothing to go from a city to itself
+    cost_matrix = cost_matrix + cost_matrix.T
+    np.fill_diagonal(cost_matrix, 0)
+
+    # Display the cost matrix
+    return cost_matrix
+
+
+
 if __name__ == "__main__":
     # Example usage:
-    graph = [
-        [0, 2, INT_MAX, 12, 5],
-        [2, 0, 4, 8, INT_MAX],
-        [INT_MAX, 4, 0, 3, 3],
-        [12, 8, 3, 0, 10],
-        [5, INT_MAX, 3, 10, 0],
-    ]
-    print(genetic_alg(20,graph,100))
-    
+    # graph = [
+    #     [0, 2, INT_MAX, 12, 5],
+    #     [2, 0, 4, 8, INT_MAX],
+    #     [INT_MAX, 4, 0, 3, 3],
+    #     [12, 8, 3, 0, 10],
+    #     [5, INT_MAX, 3, 10, 0],
+    # ]
+    graph = generate_city(25)
+    print(genetic_alg(100,graph,1000))
+    print(graph)
     
     min_cost = 0
