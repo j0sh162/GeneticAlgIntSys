@@ -1,86 +1,121 @@
 import random
 
+INT_MAX = 2147483647
 
 # Each chromosone is the order of the cities we visit
-def gen_genome(len):
+
+#TODO define a start postion as it needs to be a cycle
+def gen_genome(leng):
     genome = []
     while True:
-        rnd = random.randint(0, len)
+        rnd = random.randint(0, leng-1)
         if rnd not in genome:
             genome.append(rnd)
-        if len(genome) == len:
+        if len(genome) == leng:
             return {"score": 0, "genome": genome}
 
 
 def gen_population(pop_size, len):
     population = []
     for i in range(pop_size):
+        # print(population)
         population.append(gen_genome(len))
     return population
 
 
 def genetic_alg(pop_size, map, iter):
-    population = gen_population(pop_size,len(map[0]))
-    
+    population = gen_population(pop_size, len(map[0]))
+    # print(population)
+    # print(len(population))
     for i in range(iter):
-        population = evaluate_func(population,map)
+        print(i)
+        population = evaluate_func(population, map)[:10]
+        # population = roulette_selection(population)
         population = crossover(population)
+        population = mutate(population)
+    population = evaluate_func(population, map)
     
-    return None
+    return population[0]
 
 
 def evaluate_func(population, map):
+    # print(len(population))
     for genome in population:
         f = 0
-        for i in range(len(genome) - 1):
-            f += map[genome[i]][genome[i] + 1]
+        for i in range(len(genome['genome'])-1):
+            # print( map[genome['genome'][i]][genome['genome'][i + 1]])
+            # print(genome)
+            # print(map[genome['genome'][i]][genome['genome'][i + 1]])
+            f += map[genome['genome'][i]][genome['genome'][i + 1]]
         genome['score'] = f
-    return sorted(population, key=lambda x: x['score'],reverse=True)
+        # print(genome)
+       
+    return sorted(population, key=lambda x: x["score"], reverse=False)
+
+
+def roulette_selection(population, prob_thresh=0.5):
+    selection = []
+    total_value = sum(item["score"] for item in population)
+    for i in range(len(population)):
+        if population[i]["score"] / total_value >= prob_thresh:
+            selection.append(population[i])
+    return selection
+
+
+def mutate(population, p=0.2):
+   
+    for i in population:
+        # print(i)
+        rnd = random.random()
+        if(rnd<p):
+            rnd_ind1 = random.randint(0,len(i['genome'])-1)
+            rnd_ind2 = random.randint(0,len(i['genome'])-1)
+            
+            i['genome'][rnd_ind1], i['genome'][rnd_ind2] = i['genome'][rnd_ind2], i['genome'][rnd_ind1]
+            
+    
+    return population
 
 
 # for this we take the top half of the population and breed them to fill up the population
 def crossover(population):
-    population = population[:len(population)/2]
-    children = []    
-    for i in range(0,len(population),2):
-        dad = population[i]['genome']
-        mom = population[i+1]['genome']
-        
-        point1 = random.randint(0, len(dad))
-        point2 = random.randint(0, len(dad))
+    children = []
+    for i in range(0, len(population), 2):
+        dad = population[i]["genome"]
+        mom = population[i + 1]["genome"]
 
-        if(point2 < point1):
-            point1,point2 = point2,point1
-        
+        point1 = random.randint(0, len(dad)-1)
+        point2 = random.randint(0, len(dad)-1)
+
+        if point2 < point1:
+            point1, point2 = point2, point1
+
         child1 = dad[point1:point2]
-        child2 = dad[:point1]
-        child2.append(dad[point2:])
+        child2 = dad[:point1] + dad[point2:]
+        
         for j in mom:
             if j not in child1:
                 child1.append(j)
             if j not in child2:
                 child2.append(j)
-        
-        child1 = {
-            'score':0,
-            'genome':child1
-        }
-        child2 = {
-            'score':0,
-            'genome':child2
-        }
-        children.append([child1,child2])
-    
-    population.append(children)    
-        
-        
+
+        child1 = {"score": 0, "genome": child1}
+        child2 = {"score": 0, "genome": child2}
+        children = children + [child1,child2]
+
+    population = population + children
+
     return population
 
 
 if __name__ == "__main__":
     # Example usage:
-    graph = [[0, 10, 15, 20], [10, 0, 35, 25], [15, 35, 0, 30], [20, 25, 30, 0]]
-    start_city = 0
+    graph = [
+        [0, 2, INT_MAX, 12, 5],
+        [2, 0, 4, 8, INT_MAX],
+        [INT_MAX, 4, 0, 3, 3],
+        [12, 8, 3, 0, 10],
+        [5, INT_MAX, 3, 10, 0],
+    ]
+    print(genetic_alg(20,graph,100))
     min_cost = 0
-
-    print("Minimum cost of traveling salesman tour:", min_cost)
