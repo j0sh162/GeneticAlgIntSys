@@ -182,15 +182,3 @@ generation_iterator = 100
 values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 weights = [2, 8, 3, 8, 1, 9, 3, 6, 5, 4]
 print(genetic_main_loop(max_weight, values, weights, count_items, pop_size, mutation_rate, generation_iterator))
-
-
-
-# weights = generate_weights(count_items)
-# values = generate_values(count_items)
-# population = generate_population(count_items, pop_size)
-
-# print("Weights:", weights)
-# print("Values:", values)
-
-# for i in range(pop_size):
-#     print(population[i], ":", fitness_eval(population[i], count_items, total_weight, weights, values))
