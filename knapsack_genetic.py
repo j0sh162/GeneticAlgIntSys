@@ -118,7 +118,7 @@ def crossover(mom, dad):
     return kid1#, kid2
 
 
-def select_reproduce_mutate(population, fitness, prob_thresh, mutation_rate):
+def select_reproduce_mutate(population, fitness, mutation_rate):
     # Selection
     original_len = len(population)
     # selection = roulette_selection(population, fitness, prob_thresh)
@@ -154,14 +154,16 @@ def pick_best_individuals(population, fitness_p, offspring, fitness_o):
     return best_individuals, best_fitness_value
 
 
-def genetic_main_loop(max_weight, count_items, pop_size, selection_thresh, mutation_rate, gen_iter):
-    values = generate_values(count_items)
-    weights = generate_weights(count_items)
+def genetic_main_loop(max_weight, values, weights, count_items, pop_size, mutation_rate, gen_iter):
+    # values = generate_values(count_items)
+    # weights = generate_weights(count_items)
+    print(values)
+    print(weights)
     population = generate_population(count_items, pop_size)
     best_solution = ["", 0]
     for i in range(gen_iter):
         population_fitness = get_population_fitness(population, count_items, max_weight, weights, values)
-        children = select_reproduce_mutate(population, population_fitness, selection_thresh, mutation_rate)
+        children = select_reproduce_mutate(population, population_fitness, mutation_rate)
         children_fitness = get_population_fitness(children, count_items, max_weight, weights, values)
         population, top_fitness_tmp = pick_best_individuals(population, population_fitness, children, children_fitness)
         if top_fitness_tmp >= best_solution[1]:
@@ -175,10 +177,11 @@ def genetic_main_loop(max_weight, count_items, pop_size, selection_thresh, mutat
 max_weight = 20
 count_items = 10
 pop_size = 1000
-selection_thresh = 0.2
-mutation_rate = 0.01
+mutation_rate = 0.1
 generation_iterator = 100
-print(genetic_main_loop(max_weight, count_items, pop_size, selection_thresh, mutation_rate, generation_iterator))
+values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+weights = [2, 8, 3, 8, 1, 9, 3, 6, 5, 4]
+print(genetic_main_loop(max_weight, values, weights, count_items, pop_size, mutation_rate, generation_iterator))
 
 
 
