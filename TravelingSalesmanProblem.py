@@ -5,7 +5,6 @@ INT_MAX = 2147483647
 
 # Each chromosone is the order of the cities we visit
 
-#TODO define a start postion as it needs to be a cycle
 def gen_genome(leng,start):
     genome = []
     while True:
@@ -140,8 +139,8 @@ if __name__ == "__main__":
     #     [12, 8, 3, 0, 10],
     #     [5, INT_MAX, 3, 10, 0],
     # ]
-    graph = generate_city(25)
-    print(genetic_alg(100,graph,1000))
+    graph = generate_city(50)
+    print(genetic_alg(1000,graph,10000))
     print(graph)
     
     min_cost = 0
