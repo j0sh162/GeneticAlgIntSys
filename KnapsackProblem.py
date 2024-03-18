@@ -29,9 +29,10 @@ def knapsack(weights, values, capacity):
 
 if __name__ == '__main__':
     # Example usage:
-    weights = [2, 3, 4, 5]
-    values = [3, 4, 5, 6]
-    capacity = 5
+    capacity = 20 
+    values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    weights = [2, 8, 3, 8, 1, 9, 3, 6, 5, 4]
+
 
     max_value, items = knapsack(weights, values, capacity)
     print("Maximum value:", max_value)

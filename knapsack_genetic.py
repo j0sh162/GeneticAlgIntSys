@@ -13,9 +13,13 @@ def generate_weights(count_items):
     return weights
 
 # generate a population of given size (population_size)
-# each individual (genotype) is of length count_times (the amount of knapsack items)
+# each individual contains its genotype, value and weight
+# each individual's genotype is of length count_times (the amount of knapsack items)
 # returns a population list of size population_size
 def generate_population(count_items, population_size):
+    if population_size % 2 != 0:
+        population_size += 1
+        
     population = []
     for i in range(population_size):
         genotype = ""
@@ -24,17 +28,20 @@ def generate_population(count_items, population_size):
                 genotype += str(1)
             else:
                 genotype += str(0)
-        population.append(genotype)
+        individual = {"genotype": genotype, "value": 0, "weight": 0}
+        population.append(individual)
     return population
 
-# evaluate the fitness of one genotype
-# returns the fitness value of the genotype
-def fitness_eval(genotype, count_items, max_weight, weights, values):
+# evaluate the fitness of one individual
+# returns the fitness value of the individual
+def fitness_eval(individual, count_items, max_weight, weights, values):
+    genotype = individual["genotype"]
     if len(genotype) > count_items:
-        return 0
+        individual["value"] = 0
+        return individual
 
-    genotype_weight = 0
-    genotype_value = 0
+    indiv_value = 0
+    indiv_weight = 0
 
     index = 0
     for gene in genotype:
@@ -42,53 +49,43 @@ def fitness_eval(genotype, count_items, max_weight, weights, values):
             index += 1
             continue
         elif int(gene) == 1:
-            genotype_weight += weights[index]
-            genotype_value += values[index]
-            if genotype_weight > max_weight:
-                genotype_value = 0
+            indiv_value += values[index]
+            indiv_weight += weights[index]
+            if indiv_weight > max_weight:
+                indiv_value = 0
                 break
         index += 1
-    return genotype_value
+        
+    individual["value"] = indiv_value
+    individual["weight"] = indiv_weight
+    return individual
 
 # evaluate the fitness of each genotype in a population
 # returns a list of fitness values of each individual in the population
-def get_population_fitness(population, count_items, max_weight, weights, values):
-    fitness = []
-    for i in range(len(population)):
-        fitness.append(fitness_eval(population[i], count_items, max_weight, weights, values))
-    return fitness
-
-# returns a list of individuals selected from the roulette
-# the individuals need to pass the probability threshold
-def roulette_selection(population, fitness, prob_thresh):
-    selection = []
-    total_value = sum(fitness)
-    for i in range(len(population)):
-        if fitness[i]/total_value >= prob_thresh:
-            selection.append(population[i])
-    return selection
-
-def tournament_selection(population, fitness):
-    k_competitors = max(int(len(population) / 3), 2)
+def evaluate_fitness(population, count_items, max_weight, weights, values):
+    return [fitness_eval(ind, count_items, max_weight, weights, values) for ind in population]
     
-    competitors = []
-    competitors_fitness = []
-    for i in range(k_competitors):
-        rand_id = random.randint(0, len(population)-1)
-        competitors.append(population[rand_id])
-        competitors_fitness.append(fitness[rand_id])
-    
-    while len(competitors) > 1:
-        weakest_id = competitors_fitness.index(min(competitors_fitness))
-        del competitors[weakest_id]
-        del competitors_fitness[weakest_id]
+# Tournamnet selection, chooses two most fittest individuals
+def tournament_selection(population, tournament_size):
+    selected_inds = []
 
-    return competitors[0]
+    # several limited size tournaments
+    for _ in range(len(population)//2):
+        tournament = random.sample(population, tournament_size)
+        tournament_fitness = [ind["value"] for ind in tournament]
 
+        # select the fittest ind
+        fittest_individual_index = tournament_fitness.index(max(tournament_fitness))
+        selected_inds.append(tournament[fittest_individual_index])
+        
+        # select the 2nd fittest ind
+        tournament_fitness[fittest_individual_index] = float('-inf') # setting the 1st fittest to not be selected with the max
+        fittest_individual_index = tournament_fitness.index(max(tournament_fitness))
+        selected_inds.append(tournament[fittest_individual_index])
 
+    return selected_inds
 
-
-
+# bit flipping mutation
 def mutation(genotype, mutation_rate):
     for i in range(len(genotype)):
         if random.random() <= mutation_rate:
@@ -98,87 +95,96 @@ def mutation(genotype, mutation_rate):
                 genotype = change_str_char_at_i(genotype, '1', i)
     return genotype
 
+# utility function for mutation()
 def change_str_char_at_i(string, char, i):
     return string[:i] + char + string[i+1:]
 
+# apply mutation to the whole population
 def mutate_population(population, mutation_rate):
-    for genotype in population:
-        genotype = mutation(genotype, mutation_rate)
+    for ind in population:
+        ind["genotype"] = mutation(ind["genotype"], mutation_rate)
     return population
 
 # double-point crossover
 def crossover(mom, dad):
-    point1 = random.randint(1, len(mom))
-    point2 = random.randint(1, len(mom))
+    mom_genotype = mom["genotype"]
+    dad_genotype = dad["genotype"]
+    
+    point1 = random.randint(1, len(mom_genotype))
+    point2 = random.randint(1, len(mom_genotype))
     if point1 > point2:
         point1, point2 = point2, point1
     
-    kid1 = mom[:point1] + dad[point1:point2] + mom[point2:]
-    # kid2 = dad[:point1] + mom[point1:point2] + dad[point2:]
-    return kid1#, kid2
-
-
-def select_reproduce_mutate(population, fitness, mutation_rate):
-    # Selection
-    original_len = len(population)
-    # selection = roulette_selection(population, fitness, prob_thresh)
-    selection = tournament_selection(population, fitness)
-    if len(selection) > original_len:
-        selection = selection[:original_len]
+    kid1_genotype = mom_genotype[:point1] + dad_genotype[point1:point2] + mom_genotype[point2:]
+    kid2_genotype = dad_genotype[:point1] + mom_genotype[point1:point2] + dad_genotype[point2:]
     
-    # Crossover
-    children = []
-    while len(children) < original_len:
-        parent1 = selection[random.randint(0, len(selection)-1)]
-        parent2 = selection[random.randint(0, len(selection)-1)]
-        child = crossover(parent1, parent2)
-        children.append(child)
-    
-    # Mutate
-    return mutate_population(children, mutation_rate)
+    kid1 = {"genotype": kid1_genotype, "value": 0, "weight": 0}
+    kid2 = {"genotype": kid2_genotype, "value": 0, "weight": 0}
 
-def pick_best_individuals(population, fitness_p, offspring, fitness_o):
-    population_combined = list(zip(population, fitness_p))
-    offspring_combined = list(zip(offspring, fitness_o))
-    
-    population_combined.sort(key=lambda x: x[1], reverse=True)
-    offspring_combined.sort(key=lambda x: x[1], reverse=True)
+    return kid1, kid2
 
-    best_individuals = population_combined[:len(population)] + offspring_combined[:len(population)]
-    best_individuals.sort(key=lambda x: x[1], reverse=True)
-    best_individuals = best_individuals[:len(population)]
+# Selects the ind with the highest fitness value
+def select_best(population):
+    sorted_pop = sorted(population, key=lambda x: x["value"], reverse=True)
+    return sorted_pop[0]
 
-    best_fitness_value = best_individuals[0][1]
-    best_individuals = [genotype for genotype, _ in best_individuals]
-
-    return best_individuals, best_fitness_value
-
-
-def genetic_main_loop(max_weight, values, weights, count_items, pop_size, mutation_rate, gen_iter):
-    # values = generate_values(count_items)
-    # weights = generate_weights(count_items)
-    print(values)
-    print(weights)
+def genetic_main_loop(max_weight, values, weights, pop_size, tournament_size, crossover_rate, mutation_rate, gen_iter):
+    count_items = len(values)
     population = generate_population(count_items, pop_size)
-    best_solution = ["", 0]
-    for i in range(gen_iter):
-        population_fitness = get_population_fitness(population, count_items, max_weight, weights, values)
-        children = select_reproduce_mutate(population, population_fitness, mutation_rate)
-        children_fitness = get_population_fitness(children, count_items, max_weight, weights, values)
-        population, top_fitness_tmp = pick_best_individuals(population, population_fitness, children, children_fitness)
-        if top_fitness_tmp >= best_solution[1]:
-            best_solution[0] = population[0]
-            best_solution[1] = top_fitness_tmp
     
-    return best_solution[0], best_solution[1]
+    best_solution = {"genotype": "", "value": 0, "weight": 0}
+    gen_solution_found = 0
+    
+    population = evaluate_fitness(population, count_items, max_weight, weights, values)
+    
+    for i in range(gen_iter): 
+        # Selection (tournamnet)
+        selected_inds = tournament_selection(population, tournament_size)
+        
+        # Crossover - reproduction
+        kids = []
+        while len(kids) < len(population):
+            p1_id = random.randint(0, len(selected_inds)-1)
+            p2_id = random.randint(0, len(selected_inds)-1)
+            while p2_id == p1_id:
+                p2_id = random.randint(0, len(selected_inds)-1)
+            
+            parent1 = selected_inds[p1_id]
+            parent2 = selected_inds[p2_id]
+            
+            if random.random() <= crossover_rate:
+                kid1, kid2 = crossover(parent1, parent2)
+                kids.append(kid1)
+                kids.append(kid2)
+            else:
+                kids.append(parent1)
+                kids.append(parent2)
+        
+        # Mutate
+        population = mutate_population(kids, mutation_rate)
+        
+        # Evaluate, save the best solution thus far
+        population = evaluate_fitness(population, count_items, max_weight, weights, values)
+        
+        tmp_best = select_best(population)
+        if tmp_best["value"] > best_solution["value"]:
+            best_solution = tmp_best
+            gen_solution_found = i
 
+    return best_solution, gen_solution_found
 
+if __name__ == "__main__":
+    random.seed(404)
 
-max_weight = 20
-count_items = 10
-pop_size = 1000
-mutation_rate = 0.1
-generation_iterator = 100
-values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-weights = [2, 8, 3, 8, 1, 9, 3, 6, 5, 4]
-print(genetic_main_loop(max_weight, values, weights, count_items, pop_size, mutation_rate, generation_iterator))
+    max_weight = 20
+    values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    weights = [2, 8, 3, 8, 1, 9, 3, 6, 5, 4]
+
+    pop_size = 100
+    tournament_size = pop_size//10
+    crossover_rate = 0.5
+    mutation_rate = 0.1
+    gen_iter = 100
+    print("values:", values)
+    print("weights:", weights)
+    print(genetic_main_loop(max_weight, values, weights, pop_size, tournament_size, crossover_rate, mutation_rate, gen_iter))
