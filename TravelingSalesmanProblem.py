@@ -19,24 +19,23 @@ def generate_city(num_cities):
 def gen_genome(leng,start):
     genome = []
     while True:
-        rnd = random.randint(0, leng-1)
+        rnd = random.randint(0, leng - 1)
         if rnd not in genome and rnd != start:
             genome.append(rnd)
-        if len(genome) == leng-1:
-            genome = [start]+genome+[start]
+        if len(genome) == leng - 1:
+            genome = [start] + genome + [start]
             return {"score": 0, "genome": genome}
 
 
-def gen_population(pop_size, len,start):
+def gen_population(pop_size, len, start):
     population = []
     for i in range(pop_size):
         # print(population)
-        population.append(gen_genome(len,start))
+        population.append(gen_genome(len, start))
     return population
 
 
 def evaluate_func(population, map):
-    # print(len(population))
     for genome in population:
         f = 0
         for i in range(len(genome['genome'])-1):
@@ -75,7 +74,6 @@ def tournament_selection(population, tournament_size):
 
 def mutate(population, p=0.2):
     for i in population:
-        # print(i)
         rnd = random.random()
         if(rnd < p):
             rnd_ind1 = random.randint(1,len(i['genome'])-2)
