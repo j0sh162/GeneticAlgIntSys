@@ -1,0 +1,7 @@
+Set generations to 1000 as the upper bound
+Go through 
+    pop_size values
+Go through  
+    tournament sizes
+    crossover rates
+    mutation rates
