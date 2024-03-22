@@ -50,13 +50,22 @@ def evaluate_func(population, map):
     return population
 
 # Tournamnet selection, chooses two most fittest individuals
-def tournament_selection(population, tournament_size):
+def tournament_selection(population, elitism_proportion, tournament_size):
     selected_inds = []
+
+    # elitism selection
+    pop_sorted = sorted(population, key=lambda x: x["score"], reverse=False)
+    for i in range(int(len(population) * elitism_proportion)):
+        selected_inds.append(pop_sorted[i])
+    
+    # if of odd length - remove one element
+    if len(selected_inds) % 2 != 0:
+        selected_inds.pop()
 
     # several limited size tournaments
     # here we are doing minimization,
     # so the lower the score - the fitter the individual
-    for _ in range(len(population)//2):
+    while len(selected_inds) < len(population):
         tournament = random.sample(population, tournament_size)
         tournament_fitness = [ind["score"] for ind in tournament]
 
@@ -125,9 +134,9 @@ def crossover(population, start, crossover_rate):
             child1, child1 = crossover_ind(parent1, parent2, start)
             children.append(child1)
             children.append(child1)
-        else:
-            children.append(parent1)
-            children.append(parent2)
+        # else:
+        #     children.append(parent1)
+        #     children.append(parent2)
 
     return children
 
@@ -136,8 +145,11 @@ def select_best(population):
     return sorted_pop[0]
 
 
-def genetic_alg(map, pop_size, tournament_size, crossover_rate, mutation_rate, iter, start = 0):
-    population = gen_population(pop_size, len(map[0]),start)
+def genetic_alg(map, pop_size, tournament_size, elitism_proportion, crossover_rate, mutation_rate, iter, start = 0):
+    np.random.seed(0)
+    random.seed(404)
+
+    population = gen_population(pop_size, len(map[0]), start)
     best_solution = {"score": INT_MAX, "genome": ""}
     gen_solution_found = 0
     
@@ -147,7 +159,7 @@ def genetic_alg(map, pop_size, tournament_size, crossover_rate, mutation_rate, i
 
     population = evaluate_func(population, map)
     for i in range(iter):
-        population = tournament_selection(population, tournament_size)
+        population = tournament_selection(population, elitism_proportion, tournament_size)
         population = crossover(population, start, crossover_rate)
         population = mutate(population, mutation_rate)
         population = evaluate_func(population, map)
@@ -157,17 +169,17 @@ def genetic_alg(map, pop_size, tournament_size, crossover_rate, mutation_rate, i
             best_solution = tmp_best.copy()
             gen_solution_found = i
         
-        # Append data for CSV
-        results.append({
-            "Generation": i,
-            "Best Score": best_solution["score"],
-            "Best Genotype": best_solution["genome"],
-            "Population Size": pop_size,
-            "Tournament Size": tournament_size,
-            "Crossover Rate": crossover_rate,
-            "Mutation Rate": mutation_rate,
-            "Iterations": gen_iter
-        })
+        # # Append data for CSV
+        # results.append({
+        #     "Generation": i,
+        #     "Best Score": best_solution["score"],
+        #     "Best Genotype": best_solution["genome"],
+        #     "Population Size": pop_size,
+        #     "Tournament Size": tournament_size,
+        #     "Crossover Rate": crossover_rate,
+        #     "Mutation Rate": mutation_rate,
+        #     "Iterations": gen_iter
+        # })
 
 
     return best_solution, gen_solution_found, results
@@ -184,7 +196,7 @@ if __name__ == "__main__":
     random.seed(404)
     
     # Example usage:
-    graph = generate_city(100)
+    graph = generate_city(60)
     # graph = [
     #     [0, 2, INT_MAX, 12, 5],
     #     [2, 0, 4, 8, INT_MAX],
@@ -192,19 +204,20 @@ if __name__ == "__main__":
     #     [12, 8, 3, 0, 10],
     #     [5, INT_MAX, 3, 10, 0],
     # ]
-    pop_size = 500
+    pop_size = 100
     gen_iter = 1000
     
     tournament_size = pop_size//10
-    crossover_rate = 0.5
-    mutation_rate = 0.1
+    elitism_proportion = 0.08
+    crossover_rate = 0.8
+    mutation_rate = 0.05
     
-    best_solution, gen_solution_found, results = genetic_alg(graph, pop_size, tournament_size, crossover_rate, mutation_rate, gen_iter)
+    best_solution, gen_solution_found, results = genetic_alg(graph, pop_size, tournament_size, elitism_proportion, crossover_rate, mutation_rate, gen_iter)
 
     print("Best Solution Found:", best_solution)
     print("Generation Solution Found:", gen_solution_found)
     print(graph)
 
-    save_results_to_csv(results, "TSP_GA_results.csv")
+    # save_results_to_csv(results, "TSP_GA_results.csv")
 
     
